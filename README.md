@@ -3,6 +3,9 @@
 
 This is an FPGA implementation of the NEO GEO/MVS system by [Furrtek](https://www.patreon.com/furrtek/posts)
 
+## Optional HDMI geometry controls
+The Audio & Video OSD offers optional HDMI **horizontal and vertical size** and **horizontal and vertical position** adjustments, all disabled by default. The feature is inspired by [Meathax CRT adjustment controls in SIMPLE156](https://github.com/meathax/meatsauce/blob/main/cores/simple156/OSMAN.sv). It adapts the user-facing idea to the Neo Geo HDMI scaler, rather than copying Meathax HDL. See [implementation details, testing and credits](docs/hdmi-geometry.md).
+
 ## Features
 * Supports memory card saving
 * MVS, AES, and CD system support

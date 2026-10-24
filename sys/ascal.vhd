@@ -195,6 +195,9 @@ ENTITY ascal IS
 		himax : IN natural RANGE 0 TO 4095 :=0;
 		vimin : IN natural RANGE 0 TO 4095 :=0;
 		vimax : IN natural RANGE 0 TO 4095 :=0;
+        -- BAZSET: HDMI-only source zoom after destination size saturation.
+        ihzoom : IN natural RANGE 0 TO 15 :=0;
+        ivzoom : IN natural RANGE 0 TO 15 :=0;
 
 		-- Detected input image size
 		i_hdmax : OUT natural RANGE 0 TO 4095;
@@ -1168,6 +1171,7 @@ BEGIN
 		VARIABLE div_v : unsigned(16 DOWNTO 0);
 		VARIABLE dir_v : unsigned(11 DOWNTO 0);
 		VARIABLE bil_t_v : type_bil_t;
+        VARIABLE hdmi_hcrop,hdmi_vcrop : natural RANGE 0 TO 4095;
 	BEGIN
 		IF i_reset_na='0' THEN
 			i_write<='0';
@@ -1272,13 +1276,17 @@ BEGIN
 				END IF;
 
 				IF i_iauto='1' THEN
-					-- Auto-size
-					i_hmin<=0;
-					i_hmax<=i_himax;
-					i_vmin<=0;
-					IF i_pvs='1' AND i_vs_pre='0' AND (i_inter='0' OR i_pfl='0') THEN
-						i_vmax<=i_vimax;
-					END IF;
+                    -- HDMI-only overscan: crop both ends equally so the
+                    -- smaller input window scales into a legal full canvas.
+                    -- Zero zoom bits retain the native auto-detected window.
+                    hdmi_hcrop := (i_himax * ihzoom * 13) / 2048;
+                    hdmi_vcrop := (i_vimax * ivzoom * 13) / 2048;
+                    i_hmin <= hdmi_hcrop;
+                    i_hmax <= i_himax - hdmi_hcrop;
+                    i_vmin <= hdmi_vcrop;
+                    IF i_pvs='1' AND i_vs_pre='0' AND (i_inter='0' OR i_pfl='0') THEN
+                        i_vmax <= i_vimax - hdmi_vcrop;
+                    END IF;
 				ELSE
 					-- Forced image
 					i_hmin<=himin; -- <ASYNC>

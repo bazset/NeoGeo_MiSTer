@@ -756,6 +756,8 @@ wire         bob_deint;
 		.i_fl     (f1),
 		.i_de     (hde_emu),
 		.iauto    (1),
+        .ihzoom   (crt_hoverscan),
+        .ivzoom   (crt_voverscan),
 		.himin    (0),
 		.himax    (0),
 		.vimin    (0),
@@ -889,6 +891,20 @@ sys_umuldiv #(12,12,12) ar_muldiv
 	.result(ar_md_res)
 );
 
+// HDMI geometry applied only to scaler destination; native VGA is unchanged.
+wire crt_geometry_enable;
+wire [4:0] crt_hsize, crt_vsize, crt_hpos, crt_vpos;
+reg [11:0] videow, videoh;
+wire [11:0] crt_left, crt_right, crt_top, crt_bottom;
+wire [3:0] crt_hoverscan, crt_voverscan;
+hdmi_crt_window crt_window(
+    .screen_w(WIDTH),.screen_h(HEIGHT),.base_w(videow),.base_h(videoh),
+    .active(crt_geometry_enable && !direct_video && !LFB_EN),
+    .h_size(crt_hsize),.v_size(crt_vsize),
+    .h_pos(crt_hpos),.v_pos(crt_vpos),
+    .left(crt_left),.right(crt_right),.top(crt_top),.bottom(crt_bottom),
+    .hoverscan(crt_hoverscan),.voverscan(crt_voverscan)
+);
 reg [11:0] hmin;
 reg [11:0] hmax;
 reg [11:0] vmin;
@@ -902,8 +918,8 @@ reg        arxy;
 
 always @(posedge clk_vid) begin
 	reg [11:0] hmini,hmaxi,vmini,vmaxi;
-	reg [11:0] wcalc,videow;
-	reg [11:0] hcalc,videoh;
+	reg [11:0] wcalc;
+	reg [11:0] hcalc;
 	reg  [2:0] state;
 
 	hdmi_height <= (VSET && (VSET < HEIGHT)) ? VSET : HEIGHT;
@@ -981,11 +997,16 @@ always @(posedge clk_vid) begin
 			end
 
 		7: begin
-				hmini <= ((WIDTH  - videow)>>1);
-				hmaxi <= ((WIDTH  - videow)>>1) + videow - 1'd1;
-				vmini <= ((HEIGHT - videoh)>>1);
-				vmaxi <= ((HEIGHT - videoh)>>1) + videoh - 1'd1;
-			end
+            if(crt_geometry_enable && !direct_video) begin
+                hmini <= crt_left; hmaxi <= crt_right;
+                vmini <= crt_top; vmaxi <= crt_bottom;
+            end else begin
+                hmini <= ((WIDTH  - videow)>>1);
+                hmaxi <= ((WIDTH  - videow)>>1) + videow - 1'd1;
+                vmini <= ((HEIGHT - videoh)>>1);
+                vmaxi <= ((HEIGHT - videoh)>>1) + videoh - 1'd1;
+            end
+		end
 	endcase
 	
 	hmin <= hmini;
@@ -1780,6 +1801,11 @@ emu emu
 	.HDMI_FREEZE(freeze),
 	.HDMI_BLACKOUT(hdmi_blackout),
 	.HDMI_BOB_DEINT(bob_deint),
+    .HDMI_CRT_ENABLE(crt_geometry_enable),
+    .HDMI_CRT_HSIZE(crt_hsize),
+    .HDMI_CRT_VSIZE(crt_vsize),
+    .HDMI_CRT_HPOS(crt_hpos),
+    .HDMI_CRT_VPOS(crt_vpos),
 
 	.CLK_VIDEO(clk_vid),
 	.CE_PIXEL(ce_pix),

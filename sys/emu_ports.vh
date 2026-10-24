@@ -36,6 +36,8 @@ input  [11:0] HDMI_HEIGHT,
 output        HDMI_FREEZE,
 output        HDMI_BLACKOUT,
 output        HDMI_BOB_DEINT,
+output        HDMI_CRT_ENABLE,
+output [4:0] HDMI_CRT_HSIZE, HDMI_CRT_VSIZE, HDMI_CRT_HPOS, HDMI_CRT_VPOS,
 
 `ifdef MISTER_FB
 // Use framebuffer in DDRAM
